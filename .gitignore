@@ -1,0 +1,47 @@
+# Dataset folder - do not upload raw data
+dataset/
+
+# Zip backups - do not upload large compressed files
+*.zip
+
+# Python cache
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Virtual environment
+venv/
+.venv/
+env/
+.env
+
+# Data files and generated artifacts
+fraud_system/data/raw/*
+fraud_system/data/feature_engineered/*
+fraud_system/data/models/*
+fraud_system/data/outputs/predictions/*
+fraud_system/data/outputs/evaluation/*
+fraud_system/data/outputs/logs/*
+
+# Common large/generated files
+*.csv
+*.pkl
+*.keras
+*.cbm
+*.h5
+*.joblib
+
+# Keep empty folder placeholders
+!fraud_system/data/raw/.gitkeep
+!fraud_system/data/feature_engineered/.gitkeep
+!fraud_system/data/models/.gitkeep
+!fraud_system/data/outputs/predictions/.gitkeep
+!fraud_system/data/outputs/evaluation/.gitkeep
+!fraud_system/data/outputs/logs/.gitkeep
+
+# System files
+.DS_Store
+Thumbs.db
+
+# CatBoost generated training logs
+fraud_system/catboost_info/
