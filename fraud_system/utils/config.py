@@ -83,7 +83,7 @@ AE_VAL_FILE = FEATURE_DIR / "val_autoencoder_eval.csv"
 AE_TRAINING_HISTORY_FILE = MODEL_DIR / "autoencoder_training_history.csv"
 
 # Better to tune later in shared checks
-AE_THRESHOLD_QUANTILE = 0.99
+AE_THRESHOLD_QUANTILE = 0.95
 
 DNN_MODEL_FILE = MODEL_DIR / "dnn_model.keras"
 AE_MODEL_FILE = MODEL_DIR / "autoencoder_model.keras"

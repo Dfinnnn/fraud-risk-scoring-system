@@ -297,6 +297,100 @@ def evaluate_catboost() -> Dict[str, Any]:
         "classification_report_file": str(report_path),
     }
 
+# -------------------------------------------------------------------
+# DEBUG: Pre-flight data and scaler alignment check
+# -------------------------------------------------------------------
+
+def debug_preflight_check() -> None:
+    print("\n" + "=" * 70)
+    print("DEBUG PRE-FLIGHT CHECK")
+    print("=" * 70)
+
+    import pickle
+
+    # --- CHECK 1: DNN scaler vs CSV column order ---
+    print("\n[CHECK 1] DNN scaler column alignment")
+    dnn_val = pd.read_csv(config.DNN_VAL_FILE)
+    dnn_feature_list = pd.read_csv(config.DNN_FEATURE_LIST)["feature"].tolist()
+    dnn_scaler = pickle.load(open(config.DNN_SCALER_PKL, "rb"))
+
+    print(f"  Scaler expects col[0]: {dnn_feature_list[0]}")
+    print(f"  CSV actual col[0]:     {dnn_val.columns[0]}")
+    print(f"  Order match: {dnn_val[dnn_feature_list].columns.tolist() == dnn_feature_list}")
+    print(f"  Scaler mean[0]: {dnn_scaler.mean_[0]:.4f}  (should match mean of {dnn_feature_list[0]})")
+    print(f"  CSV {dnn_feature_list[0]} mean: {dnn_val[dnn_feature_list[0]].mean():.4f}")
+
+    # --- CHECK 2: DNN val data scale range ---
+    print("\n[CHECK 2] DNN val data scale range (expect roughly -4 to +4 if scaled)")
+    dnn_val_features = dnn_val[dnn_feature_list]
+    print(f"  Global min: {dnn_val_features.min().min():.4f}")
+    print(f"  Global max: {dnn_val_features.max().max():.4f}")
+    print(f"  TransactionAmt mean: {dnn_val['TransactionAmt'].mean():.4f}")
+
+    # --- CHECK 3: DNN train data scale range ---
+    print("\n[CHECK 3] DNN train data scale range (expect roughly -4 to +4 if scaled)")
+    dnn_train = pd.read_csv(config.DNN_TRAIN_FILE)
+    dnn_train_features = dnn_train[dnn_feature_list]
+    print(f"  Global min: {dnn_train_features.min().min():.4f}")
+    print(f"  Global max: {dnn_train_features.max().max():.4f}")
+    print(f"  Class distribution:\n{dnn_train[config.TARGET_COL].value_counts()}")
+
+    # --- CHECK 4: DNN training history convergence ---
+    print("\n[CHECK 4] DNN training history")
+    history_path = config.MODEL_DIR / "dnn_training_history.csv"
+    if history_path.exists():
+        history = pd.read_csv(history_path)
+        print(history[["loss", "val_loss"]].to_string())
+        print(f"  Final train loss:  {history['loss'].iloc[-1]:.6f}")
+        print(f"  Final val loss:    {history['val_loss'].iloc[-1]:.6f}")
+        if "auc" in history.columns:
+            print(f"  Final train AUC:   {history['auc'].iloc[-1]:.4f}")
+            print(f"  Final val AUC:     {history['val_auc'].iloc[-1]:.4f}")
+    else:
+        print("  WARNING: dnn_training_history.csv not found")
+
+    # --- CHECK 5: Autoencoder scaler column alignment ---
+    print("\n[CHECK 5] Autoencoder scaler column alignment")
+    ae_val = pd.read_csv(config.AE_VAL_FILE)
+    ae_feature_list = pd.read_csv(config.AE_FEATURE_LIST)["feature"].tolist()
+    ae_scaler = pickle.load(open(config.AE_SCALER_PKL, "rb"))
+
+    print(f"  Scaler expects col[0]: {ae_feature_list[0]}")
+    print(f"  CSV actual col[0]:     {ae_val.columns[0]}")
+    print(f"  Order match: {ae_val[ae_feature_list].columns.tolist() == ae_feature_list}")
+    print(f"  Scaler mean[0]: {ae_scaler.mean_[0]:.4f}  (should match mean of {ae_feature_list[0]})")
+
+    # --- CHECK 6: Autoencoder fraud vs normal reconstruction error direction ---
+    print("\n[CHECK 6] Autoencoder reconstruction error direction")
+    ae_model = AutoencoderInferenceModel()
+    ae_model.load()
+    score_df = ae_model.score_df(ae_val.head(2000))  # sample for speed
+    y_sample = ae_val[config.TARGET_COL].values[:2000]
+
+    normal_errors = score_df.loc[y_sample == 0, "reconstruction_error"].values
+    fraud_errors  = score_df.loc[y_sample == 1, "reconstruction_error"].values
+
+    print(f"  Mean normal error: {normal_errors.mean():.6f}")
+    print(f"  Mean fraud error:  {fraud_errors.mean():.6f}")
+    print(f"  Fraud > Normal (expected True): {fraud_errors.mean() > normal_errors.mean()}")
+    print(f"  Fraud/Normal ratio: {fraud_errors.mean() / normal_errors.mean():.4f}  (expect > 1.2)")
+
+    # --- CHECK 7: Autoencoder BatchNorm running statistics ---
+    print("\n[CHECK 7] Autoencoder BatchNorm running statistics")
+    import tensorflow as tf
+    keras_model = tf.keras.models.load_model(str(config.AE_MODEL_FILE))
+    for layer in keras_model.layers:
+        if "batch_norm" in layer.name.lower() or "batch_normalization" in layer.name.lower():
+            moving_mean = layer.moving_mean.numpy()
+            moving_var  = layer.moving_variance.numpy()
+            print(f"  Layer: {layer.name}")
+            print(f"    moving_mean[:3]: {moving_mean[:3]}")
+            print(f"    moving_var[:3]:  {moving_var[:3]}")
+            print(f"    Mean far from 0: {(abs(moving_mean) > 1.0).sum()} / {len(moving_mean)} units")
+
+    print("\n" + "=" * 70)
+    print("PRE-FLIGHT CHECK COMPLETE")
+    print("=" * 70)
 
 # -------------------------------------------------------------------
 # DNN evaluation
@@ -307,7 +401,7 @@ def evaluate_dnn() -> Dict[str, Any]:
     print("DNN CHECK")
     print("=" * 70)
 
-    val_df = pd.read_csv(config.DNN_VAL_FILE)
+    val_df = pd.read_csv(config.FEATURE_DIR / "val_step10_pruned.csv")
     y_val = val_df[config.TARGET_COL].values.astype(int)
 
     model = DNNInferenceModel()
@@ -373,7 +467,7 @@ def evaluate_autoencoder() -> Dict[str, Any]:
     print("AUTOENCODER CHECK")
     print("=" * 70)
 
-    val_df = pd.read_csv(config.AE_VAL_FILE)
+    val_df = pd.read_csv(config.FEATURE_DIR / "val_step10_pruned.csv")
     y_val = val_df[config.TARGET_COL].values.astype(int)
 
     model = AutoencoderInferenceModel()
@@ -634,4 +728,5 @@ def main():
 
 
 if __name__ == "__main__":
+    debug_preflight_check() 
     main()
