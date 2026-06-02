@@ -99,6 +99,7 @@ class EntityProfile:
     block_count: int = 0
 
     risk_history: List[float] = field(default_factory=list)
+    anomaly_history: List[bool] = field(default_factory=list)
 
     first_seen: Optional[int] = None
     last_seen: Optional[int] = None

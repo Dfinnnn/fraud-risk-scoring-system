@@ -92,12 +92,13 @@ AE_THRESHOLD_FILE = MODEL_DIR / "ae_threshold.txt"
 CATBOOST_MODEL_VERSION = "catboost_v1"
 DNN_MODEL_VERSION = "dnn_v1"
 AE_MODEL_VERSION = "autoencoder_v1"
+MODEL_VERSION = "v1"
 
 # -------------------------------------------------------------------
 # FUSION WEIGHTS
 # -------------------------------------------------------------------
-CATBOOST_WEIGHT = 0.60
-DNN_WEIGHT = 0.40
+CATBOOST_WEIGHT = 1.0
+DNN_WEIGHT = 0.0
 SUPERVISED_WEIGHT = 0.80
 ANOMALY_WEIGHT = 0.20
 
