@@ -1,82 +1,48 @@
 """
 app/main.py
 
-Landing page for the Hybrid Fraud Detection & Risk Scoring System.
+Navigation entry point for FraudZilla.
 
 Run from the project root (fraud_system/):
     streamlit run app/main.py
 
-Streamlit auto-discovers the other pages in app/pages/ and lists them in the
-sidebar. This page loads the models once and explains what the system does.
+Requires Streamlit >= 1.36 (st.navigation / st.Page / Material icons).
+
+This file owns three things and nothing else:
+1. the single st.set_page_config call for the whole app,
+2. the global theme + branded sidebar,
+3. the page registry (order, titles, icons).
+
+Each page's logic lives in its own file. Because this entry script reruns
+before every page, apply_theme() here styles all pages, and the page files no
+longer call st.set_page_config themselves (st.navigation requires it set once,
+here).
 """
 
-import state  # MUST be first: fixes sys.path and exposes shared helpers
+import state  # MUST be first: fixes sys.path
+import ui
 
 import streamlit as st
 
-import utils.config as config
-
 
 st.set_page_config(
-    page_title="Fraud Risk Scoring System",
-    page_icon="🛡️",
+    page_title="FraudZilla — Fraud Risk Scoring",
+    page_icon="\U0001F6E1\uFE0F",  # browser-tab favicon only
     layout="wide",
 )
 
-st.title("Hybrid Fraud Detection & Dynamic Risk Scoring")
-st.caption(
-    "CatBoost primary scorer · Autoencoder anomaly signal · "
-    "dynamic entity risk · rule-based escalation · SHAP explainability"
-)
+ui.apply_theme()
+ui.sidebar_brand()
 
-# ---------------------------------------------------------------
-# Load models once
-# ---------------------------------------------------------------
-left, right = st.columns([1, 1])
+# ---- Page registry (sidebar order + clean labels + Material icons) ----
+overview = st.Page("overview.py", title="Overview", icon=":material/dashboard:", default=True)
+scoring = st.Page("pages/1_Transaction_Scoring.py", title="Transaction Scoring", icon=":material/receipt_long:")
+entity = st.Page("pages/3_Entity_Profile.py", title="Entity Profile", icon=":material/account_circle:")
+monitor = st.Page("pages/4_System_Monitor.py", title="System Monitor", icon=":material/monitoring:")
+explain = st.Page("pages/2_Explanation_Panel.py", title="Explanation Panel", icon=":material/insights:")
 
-with left:
-    st.subheader("System status")
-    if state.pipeline_is_loaded():
-        st.success("Models loaded and ready.")
-    else:
-        st.info("Models not loaded yet.")
-        if st.button("Load models", type="primary"):
-            state.get_pipeline(enable_shap=True)
-            st.rerun()
+nav = st.navigation([overview, scoring, entity, monitor, explain])
 
-    if state.pipeline_is_loaded():
-        pipe = state.get_pipeline()
-        st.metric("Entities tracked this session", len(pipe.entity_store))
-        st.write(f"Model version: `{getattr(config, 'MODEL_VERSION', 'n/a')}`")
-        st.write(f"Entity key: `{config.ENTITY_ID_COL}`")
+ui.sidebar_status(state.pipeline_is_loaded())
 
-with right:
-    st.subheader("What each page does")
-    st.markdown(
-        "- **Transaction Scoring** — score one transaction, see tier, action, "
-        "anomaly flag and escalation reason.\n"
-        "- **Entity Profile** — risk history and standing status for one entity.\n"
-        "- **System Monitor** — batch-score a CSV, view summary and download.\n"
-        "- **Explanation Panel** — SHAP top-5 drivers for a transaction."
-    )
-
-st.divider()
-
-st.subheader("Honest scope")
-st.markdown(
-    "- The final risk is **CatBoost only**; the DNN is reported as a diagnostic "
-    "but is not blended into the score.\n"
-    "- The **Autoencoder** contributes an auxiliary anomaly signal used by "
-    "escalation, not a co-equal fraud probability.\n"
-    "- SHAP explains the **CatBoost probability**, not the tier escalation "
-    "(entity risk / anomaly / early warning) — those are shown as plain text.\n"
-    "- Input must be **already feature-engineered** (168 features). The app does "
-    "not run feature engineering; use the built-in sample picker for real scores."
-)
-
-st.info(
-    "Entity profiles accumulate in memory for this browser session. They build "
-    "up as you score transactions and persist across page switches, but reset "
-    "if you restart the app.",
-    icon="ℹ️",
-)
+nav.run()

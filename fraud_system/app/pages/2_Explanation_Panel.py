@@ -24,17 +24,17 @@ import state  # MUST be first: fixes sys.path
 
 import io
 
+import altair as alt
 import pandas as pd
 import streamlit as st
 
 import utils.config as config
 
 
-st.set_page_config(page_title="Explanation Panel", page_icon="🔍", layout="wide")
 st.title("Explanation Panel — SHAP")
 
 if not state.pipeline_is_loaded():
-    st.warning("Models are not loaded. Go to the main page and click **Load models** first.")
+    st.warning("Models are not loaded. Open the **Overview** page and click **Initialize detection engine** first.")
     st.stop()
 
 # Request a SHAP-enabled pipeline (rebuilds once if needed).
@@ -67,15 +67,45 @@ def render_items(items):
             "shap_value": [it.shap_value for it in items],
             "feature_value": [it.feature_value for it in items],
             "direction": [
-                "→ toward fraud" if it.shap_value > 0 else "← away from fraud"
+                "Toward fraud" if it.shap_value > 0 else "Away from fraud"
                 for it in items
             ],
         }
     )
-    # Bar chart by signed SHAP value (feature on index).
-    chart = data.set_index("feature")["shap_value"]
-    st.bar_chart(chart)
-    st.caption("Positive (right) pushes toward fraud; negative (left) pushes away.")
+
+    # Order features by absolute impact (SHAP convention: biggest driver first),
+    # regardless of direction. Color still encodes sign.
+    order = (
+        data.assign(_abs=data["shap_value"].abs())
+        .sort_values("_abs", ascending=False)["feature"]
+        .tolist()
+    )
+
+    chart = (
+        alt.Chart(data)
+        .mark_bar(cornerRadius=3, height={"band": 0.7})
+        .encode(
+            x=alt.X("shap_value:Q", title="SHAP contribution"),
+            y=alt.Y(
+                "feature:N",
+                sort=order,
+                title=None,
+                axis=alt.Axis(labelLimit=260, labelOverlap=False),
+            ),
+            color=alt.Color(
+                "direction:N",
+                scale=alt.Scale(
+                    domain=["Toward fraud", "Away from fraud"],
+                    range=["#B42318", "#216E4E"],
+                ),
+                legend=alt.Legend(title=None, orient="top"),
+            ),
+            tooltip=["feature", "shap_value", "feature_value", "direction"],
+        )
+        .properties(height=54 * len(data) + 30)
+    )
+    st.altair_chart(chart, use_container_width=True)
+    st.caption("Red pushes the score toward fraud; green pushes it away.")
     st.dataframe(data, use_container_width=True, hide_index=True)
 
 

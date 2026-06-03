@@ -1,0 +1,15 @@
+# .streamlit/config.toml
+# Light base theme for FraudZilla. This controls Streamlit's own chrome
+# (sidebar, widgets, menus) so it matches the injected design system.
+# Place this file at: fraud_system/.streamlit/config.toml
+ 
+[theme]
+base = "light"
+primaryColor = "#2F8F7F"          # FraudZilla teal-green (CTA / accents)
+backgroundColor = "#FAFBFC"       # app canvas (near-white)
+secondaryBackgroundColor = "#FFFFFF"  # cards, sidebar, inputs
+textColor = "#1F2A37"             # primary ink (passes AA on white)
+font = "sans serif"
+ 
+[client]
+toolbarMode = "minimal"

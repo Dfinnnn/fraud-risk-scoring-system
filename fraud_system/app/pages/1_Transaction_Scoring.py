@@ -21,11 +21,10 @@ import streamlit as st
 import utils.config as config
 
 
-st.set_page_config(page_title="Transaction Scoring", page_icon="🧾", layout="wide")
 st.title("Transaction Scoring")
 
 if not state.pipeline_is_loaded():
-    st.warning("Models are not loaded. Go to the main page and click **Load models** first.")
+    st.warning("Models are not loaded. Open the **Overview** page and click **Initialize detection engine** first.")
     st.stop()
 
 pipe = state.get_pipeline()

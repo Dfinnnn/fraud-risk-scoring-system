@@ -26,11 +26,10 @@ import streamlit as st
 import utils.config as config
 
 
-st.set_page_config(page_title="Entity Profile", page_icon="👤", layout="wide")
 st.title("Entity Profile Dashboard")
 
 if not state.pipeline_is_loaded():
-    st.warning("Models are not loaded. Go to the main page and click **Load models** first.")
+    st.warning("Models are not loaded. Open the **Overview** page and click **Initialize detection engine** first.")
     st.stop()
 
 pipe = state.get_pipeline()
@@ -136,6 +135,12 @@ st.subheader("Risk history")
 history = list(profile.risk_history or [])
 if len(history) == 0:
     st.info("No risk history recorded for this entity.")
+elif len(history) == 1:
+    st.info(
+        f"Only one transaction recorded (risk {history[0]:.3f}). The risk "
+        "history chart needs at least two transactions to be meaningful — "
+        "use the demo preload above to score several transactions for this entity."
+    )
 else:
     anomalies = list(getattr(profile, "anomaly_history", []) or [])
     # pad anomaly list if shorter, just in case
