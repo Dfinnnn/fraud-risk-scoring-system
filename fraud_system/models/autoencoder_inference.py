@@ -124,11 +124,11 @@ class AutoencoderInferenceModel:
         """
         self._ensure_loaded()
 
-        # --- DEBUG START ---
-        print(f"[AE DEBUG] Input df columns[:5]: {df.columns[:5].tolist()}")
-        print(f"[AE DEBUG] Expected feature_cols[:5]: {self._feature_cols[:5]}")
-        print(f"[AE DEBUG] Input df shape: {df.shape}")
-        # --- DEBUG END ---
+        # # --- DEBUG START ---
+        # print(f"[AE DEBUG] Input df columns[:5]: {df.columns[:5].tolist()}")
+        # print(f"[AE DEBUG] Expected feature_cols[:5]: {self._feature_cols[:5]}")
+        # print(f"[AE DEBUG] Input df shape: {df.shape}")
+        # # --- DEBUG END ---
 
         X = df.copy()
 
@@ -152,13 +152,13 @@ class AutoencoderInferenceModel:
         # Step 3: numeric casting
         X = X.apply(pd.to_numeric, errors="coerce").fillna(0)
 
-        # Step 4: scaling
+        # # Step 4: scaling
         X_scaled = self._scaler.transform(X).astype(np.float32)
         X_scaled = np.clip(X_scaled, -5, 5)
-        print(f"[AE DEBUG] Post-scale global min: {X_scaled.min():.4f}")
-        print(f"[AE DEBUG] Post-scale global max: {X_scaled.max():.4f}")
-        print(f"[AE DEBUG] Post-scale mean: {X_scaled.mean():.4f}")
-        # --- DEBUG END ---
+        # print(f"[AE DEBUG] Post-scale global min: {X_scaled.min():.4f}")
+        # print(f"[AE DEBUG] Post-scale global max: {X_scaled.max():.4f}")
+        # print(f"[AE DEBUG] Post-scale mean: {X_scaled.mean():.4f}")
+        # # --- DEBUG END ---
 
         return X_scaled
 
