@@ -317,7 +317,7 @@ def debug_preflight_check() -> None:
     print(f"  Scaler expects col[0]: {dnn_feature_list[0]}")
     print(f"  CSV actual col[0]:     {dnn_val.columns[0]}")
     print(f"  Order match: {dnn_val[dnn_feature_list].columns.tolist() == dnn_feature_list}")
-    print(f"  Scaler mean[0]: {dnn_scaler.mean_[0]:.4f}  (should match mean of {dnn_feature_list[0]})")
+    print(f"  Scaler center[0]: {dnn_scaler.center_[0]:.4f}  (should match median of {dnn_feature_list[0]})")
     print(f"  CSV {dnn_feature_list[0]} mean: {dnn_val[dnn_feature_list[0]].mean():.4f}")
 
     # --- CHECK 2: DNN val data scale range ---
@@ -358,7 +358,7 @@ def debug_preflight_check() -> None:
     print(f"  Scaler expects col[0]: {ae_feature_list[0]}")
     print(f"  CSV actual col[0]:     {ae_val.columns[0]}")
     print(f"  Order match: {ae_val[ae_feature_list].columns.tolist() == ae_feature_list}")
-    print(f"  Scaler mean[0]: {ae_scaler.mean_[0]:.4f}  (should match mean of {ae_feature_list[0]})")
+    print(f"  Scaler center[0]: {ae_scaler.center_[0]:.4f}  (should match median of {ae_feature_list[0]})")
 
     # --- CHECK 6: Autoencoder fraud vs normal reconstruction error direction ---
     print("\n[CHECK 6] Autoencoder reconstruction error direction")
